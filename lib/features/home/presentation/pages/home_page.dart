@@ -1,16 +1,21 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:firebase_ai/firebase_ai.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/mappers/entity_mappers.dart';
 import '../../../recipe_detail/presentation/pages/recipe_detail_page.dart';
-import '../../../recipe_detail/presentation/widgets/instructions_section.dart';
-import '../../data/home_prompts.dart';
+import '../../data/datasources/home_remote_datasource.dart';
+import '../../data/repositories/home_repository_impl.dart';
+import '../../domain/entities/recommendation_entity.dart';
+import '../../domain/usecases/get_recommendations_usecase.dart';
+import '../bloc/home_bloc.dart';
+import '../bloc/home_event.dart';
+import '../bloc/home_state.dart';
 import '../widgets/hero_meal_card.dart';
 import '../widgets/meal_card.dart';
 
-// ─── Models ──────────────────────────────────────────────────────────────────
+// ─── Craving filter model ─────────────────────────────────────────────────────
 
 class _CravingFilter {
   const _CravingFilter(this.label, this.color);
@@ -18,63 +23,7 @@ class _CravingFilter {
   final Color color;
 }
 
-class _MealItem {
-  const _MealItem({
-    required this.mealType,
-    required this.title,
-    required this.category,
-    required this.categoryColor,
-    required this.imageUrl,
-    required this.rating,
-    required this.whyYoullLoveIt,
-    required this.prepTime,
-    required this.servings,
-    required this.badges,
-    required this.ingredients,
-    required this.nutrition,
-    required this.steps,
-  });
-  final String mealType;
-  final String title;
-  final String category;
-  final Color categoryColor;
-  final String imageUrl;
-  final double rating;
-  final String whyYoullLoveIt;
-  final String prepTime;
-  final String servings;
-  final List<String> badges;
-  final List<String> ingredients;
-  final RecipeNutrition nutrition;
-  final List<InstructionStep> steps;
-
-  RecipeData toRecipeData() => RecipeData(
-        title: title,
-        imageUrl: imageUrl,
-        prepTime: prepTime,
-        servings: servings,
-        badges: badges,
-        ingredients: ingredients,
-        nutrition: nutrition,
-        steps: steps,
-      );
-}
-
-class _HeroData {
-  const _HeroData({
-    required this.title,
-    required this.prepTime,
-    required this.badge,
-    this.recipeData,
-  });
-  final String title;
-  final String prepTime;
-  final String badge;
-  final RecipeData? recipeData;
-}
-
-
-// ─── Category color mapping ───────────────────────────────────────────────────
+// ─── Category helpers ─────────────────────────────────────────────────────────
 
 Color _categoryColor(String category) {
   switch (category.toLowerCase()) {
@@ -89,8 +38,6 @@ Color _categoryColor(String category) {
   }
 }
 
-// ─── Placeholder images per category ─────────────────────────────────────────
-
 String _categoryImage(String category) {
   switch (category.toLowerCase()) {
     case 'nusantara':
@@ -104,28 +51,38 @@ String _categoryImage(String category) {
   }
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+const String _heroImageUrl =
+    'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=800&auto=format&fit=crop';
 
-class HomePage extends StatefulWidget {
+// ─── Page (BLoC provider entry point) ────────────────────────────────────────
+
+class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => HomeBloc(
+        GetRecommendationsUseCase(
+          HomeRepositoryImpl(HomeRemoteDataSourceImpl()),
+        ),
+      )..add(const FetchRecommendationsEvent()),
+      child: const _HomeView(),
+    );
+  }
 }
 
-class _HomePageState extends State<HomePage> {
-  int _selectedCraving = 0;
-  bool _isLoading = true;
-  String? _error;
+// ─── View ─────────────────────────────────────────────────────────────────────
 
-  String _greeting = 'Selamat Pagi, Chef!';
-  String _subtitle = 'Ini rekomendasi menu sehat Nusantara untuk harimu.';
-  _HeroData _hero = const _HeroData(
-    title: 'Memuat rekomendasi...',
-    prepTime: '--',
-    badge: 'Pilihan AI',
-  );
-  List<_MealItem> _meals = [];
+class _HomeView extends StatefulWidget {
+  const _HomeView();
+
+  @override
+  State<_HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<_HomeView> {
+  int _selectedCraving = 0;
 
   final List<_CravingFilter> _cravingFilters = const [
     _CravingFilter('Semua', AppColors.primary),
@@ -135,136 +92,18 @@ class _HomePageState extends State<HomePage> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _fetchRecommendations();
-  }
-
-  Future<void> _fetchRecommendations() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final model = FirebaseAI.googleAI().generativeModel(
-        model: 'gemini-2.5-flash',
-      );
-
-      final response = await model.generateContent([Content.text(HomePrompts.recommendation)]);
-      final raw = response.text ?? '';
-
-      // Strip possible markdown code fences
-      final cleaned = raw
-          .replaceAll(RegExp(r'```json\s*'), '')
-          .replaceAll(RegExp(r'```\s*'), '')
-          .trim();
-
-      final json = jsonDecode(cleaned) as Map<String, dynamic>;
-
-      final heroJson = json['hero'] as Map<String, dynamic>;
-      final recsJson = json['recommendations'] as List<dynamic>;
-
-      setState(() {
-        _greeting = json['greeting'] as String? ?? _greeting;
-        _subtitle = json['subtitle'] as String? ?? _subtitle;
-
-        // Parse hero
-        final heroDetailJson = heroJson['detail'] as Map<String, dynamic>? ?? {};
-        final heroNutritionJson = heroDetailJson['nutrition'] as Map<String, dynamic>? ?? {};
-        final heroStepsJson = heroDetailJson['steps'] as List<dynamic>? ?? [];
-        final heroIngredientsJson = heroDetailJson['ingredients'] as List<dynamic>? ?? [];
-        final heroBadgesJson = heroDetailJson['badges'] as List<dynamic>? ?? [];
-        final heroRecipeData = RecipeData(
-          title: heroJson['title'] as String,
-          imageUrl: 'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=800&auto=format&fit=crop',
-          prepTime: heroDetailJson['prepTime'] as String? ?? heroJson['prepTime'] as String? ?? '20 Menit',
-          servings: heroDetailJson['servings'] as String? ?? '2 Porsi',
-          badges: heroBadgesJson.map((e) => e as String).toList(),
-          ingredients: heroIngredientsJson.map((e) => e as String).toList(),
-          nutrition: RecipeNutrition(
-            calories: heroNutritionJson['calories'] as String? ?? '0',
-            protein: heroNutritionJson['protein'] as String? ?? '0g',
-            carbs: heroNutritionJson['carbs'] as String? ?? '0g',
-            fat: heroNutritionJson['fat'] as String? ?? '0g',
-          ),
-          steps: heroStepsJson.asMap().entries.map((e) {
-            return InstructionStep(
-              stepNumber: e.key + 1,
-              title: '',
-              description: e.value as String? ?? '',
-            );
-          }).toList(),
-        );
-        _hero = _HeroData(
-          title: heroJson['title'] as String,
-          prepTime: heroJson['prepTime'] as String,
-          badge: heroJson['badge'] as String? ?? 'Pilihan Terbaik AI',
-          recipeData: heroRecipeData,
-        );
-        _meals = recsJson.map((item) {
-          final m = item as Map<String, dynamic>;
-          final category = m['category'] as String? ?? 'Nusantara';
-
-          // Parse nutrition
-          final nutritionJson = m['nutrition'] as Map<String, dynamic>? ?? {};
-          final nutrition = RecipeNutrition(
-            calories: nutritionJson['calories'] as String? ?? '0',
-            protein: nutritionJson['protein'] as String? ?? '0g',
-            carbs: nutritionJson['carbs'] as String? ?? '0g',
-            fat: nutritionJson['fat'] as String? ?? '0g',
-          );
-
-          // Parse steps
-          final stepsJson = m['steps'] as List<dynamic>? ?? [];
-          final steps = stepsJson.asMap().entries.map((e) {
-            return InstructionStep(
-              stepNumber: e.key + 1,
-              title: '',
-              description: e.value as String? ?? '',
-            );
-          }).toList();
-
-          // Parse ingredients
-          final ingredientsJson = m['ingredients'] as List<dynamic>? ?? [];
-          final ingredients = ingredientsJson.map((e) => e as String).toList();
-
-          // Parse badges
-          final badgesJson = m['badges'] as List<dynamic>? ?? [category];
-          final badges = badgesJson.map((e) => e as String).toList();
-
-          return _MealItem(
-            mealType: m['mealType'] as String? ?? '',
-            title: m['title'] as String,
-            category: category,
-            categoryColor: _categoryColor(category),
-            imageUrl: _categoryImage(category),
-            rating: (m['rating'] as num).toDouble(),
-            whyYoullLoveIt: m['whyYoullLoveIt'] as String,
-            prepTime: m['prepTime'] as String? ?? '30 Menit',
-            servings: m['servings'] as String? ?? '2 Porsi',
-            badges: badges,
-            ingredients: ingredients,
-            nutrition: nutrition,
-            steps: steps,
-          );
-        }).toList();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _error = 'Gagal memuat rekomendasi. Coba lagi.';
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
-      body: _buildBody(),
+      body: BlocBuilder<HomeBloc, HomeState>(
+        builder: (context, state) {
+          if (state is HomeLoading || state is HomeInitial) return _buildLoading();
+          if (state is HomeError) return _buildError(context, state.message);
+          if (state is HomeLoaded) return _buildContent(context, state.recommendation);
+          return const SizedBox.shrink();
+        },
+      ),
     );
   }
 
@@ -301,11 +140,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) return _buildLoading();
-    if (_error != null) return _buildError();
-    return _buildContent();
-  }
+  // ─── Loading skeleton ───────────────────────────────────────────────────────
 
   Widget _buildLoading() {
     return SingleChildScrollView(
@@ -314,7 +149,6 @@ class _HomePageState extends State<HomePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
-          // AI banner shimmer
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
@@ -338,34 +172,34 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 24),
-          _buildSkeletonBox(height: 36, width: 240),
+          _skeleton(height: 36, width: 240),
           const SizedBox(height: 10),
-          _buildSkeletonBox(height: 18, width: 300),
+          _skeleton(height: 18, width: 300),
           const SizedBox(height: 20),
-          _buildSkeletonBox(height: 220),
+          _skeleton(height: 220),
           const SizedBox(height: 28),
-          _buildSkeletonBox(height: 160),
+          _skeleton(height: 160),
           const SizedBox(height: 12),
-          _buildSkeletonBox(height: 160),
+          _skeleton(height: 160),
           const SizedBox(height: 12),
-          _buildSkeletonBox(height: 160),
+          _skeleton(height: 160),
         ],
       ),
     );
   }
 
-  Widget _buildSkeletonBox({double? height, double? width}) {
-    return Container(
-      height: height,
-      width: width ?? double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.neutral200,
-        borderRadius: BorderRadius.circular(12),
-      ),
-    );
-  }
+  Widget _skeleton({double? height, double? width}) => Container(
+        height: height,
+        width: width ?? double.infinity,
+        decoration: BoxDecoration(
+          color: AppColors.neutral200,
+          borderRadius: BorderRadius.circular(12),
+        ),
+      );
 
-  Widget _buildError() {
+  // ─── Error ──────────────────────────────────────────────────────────────────
+
+  Widget _buildError(BuildContext context, String message) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -374,12 +208,13 @@ class _HomePageState extends State<HomePage> {
           children: [
             const Icon(Icons.wifi_off_rounded, size: 48, color: AppColors.neutral400),
             const SizedBox(height: 16),
-            Text(_error!, style: AppTextStyles.bodyMedium, textAlign: TextAlign.center),
+            Text(message, style: AppTextStyles.bodyMedium, textAlign: TextAlign.center),
             const SizedBox(height: 20),
             AppButton(
               label: 'Coba Lagi',
               icon: Icons.refresh_rounded,
-              onPressed: _fetchRecommendations,
+              onPressed: () =>
+                  context.read<HomeBloc>().add(const FetchRecommendationsEvent()),
             ),
           ],
         ),
@@ -387,14 +222,15 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildContent() {
+  // ─── Content ────────────────────────────────────────────────────────────────
+
+  Widget _buildContent(BuildContext context, RecommendationEntity data) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
-          // AI banner
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
@@ -408,45 +244,43 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Rekomendasi AI · Selasa Pagi · Cuaca Panas · Nusantara Sehat',
+                    'Rekomendasi AI · Nusantara Sehat',
                     style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary700),
                   ),
                 ),
                 GestureDetector(
-                  onTap: _fetchRecommendations,
+                  onTap: () =>
+                      context.read<HomeBloc>().add(const FetchRecommendationsEvent()),
                   child: const Icon(Icons.refresh_rounded, size: 16, color: AppColors.primary),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 14),
-          // Greeting — use titleLarge so it doesn't overflow
-          Text(_greeting, style: AppTextStyles.titleLarge),
+          Text(data.greeting, style: AppTextStyles.titleLarge),
           const SizedBox(height: 4),
           Text(
-            _subtitle,
+            data.subtitle,
             style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),
-          // Hero card — best dish, navigate with real data
           HeroMealCard(
-            title: _hero.title,
-            imageUrl:
-                'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=800&auto=format&fit=crop',
-            prepTime: _hero.prepTime,
-            badge: _hero.badge,
+            title: data.hero.title,
+            imageUrl: _heroImageUrl,
+            prepTime: data.hero.prepTime,
+            badge: data.hero.badge,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => RecipeDetailPage(recipe: _hero.recipeData),
+                builder: (_) => RecipeDetailPage(
+                  recipe: data.hero.detail.toRecipeData(data.hero.title, _heroImageUrl),
+                ),
               ),
             ),
           ),
           const SizedBox(height: 28),
-          // Section title
           Text('Jelajahi Berdasarkan Selera', style: AppTextStyles.titleMedium),
           const SizedBox(height: 12),
-          // Filter chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -481,27 +315,29 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 20),
-          // Meal cards
-          ..._meals.map(
-            (meal) => Padding(
+          ...data.meals.map((meal) {
+            final imageUrl = _categoryImage(meal.category);
+            return Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: MealCard(
                 mealType: meal.mealType.isNotEmpty ? meal.mealType : null,
                 title: meal.title,
                 category: meal.category,
-                categoryColor: meal.categoryColor,
-                imageUrl: meal.imageUrl,
+                categoryColor: _categoryColor(meal.category),
+                imageUrl: imageUrl,
                 rating: meal.rating,
                 whyYoullLoveIt: meal.whyYoullLoveIt,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => RecipeDetailPage(recipe: meal.toRecipeData()),
+                    builder: (_) => RecipeDetailPage(
+                      recipe: meal.toRecipeData(imageUrl),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          }),
           const SizedBox(height: 8),
           AppButton(
             label: 'Perbarui Preferensi',
