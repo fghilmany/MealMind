@@ -11,6 +11,7 @@ class MealCard extends StatelessWidget {
     required this.imageUrl,
     required this.rating,
     required this.whyYoullLoveIt,
+    this.mealType,
     this.onTap,
   });
 
@@ -20,6 +21,7 @@ class MealCard extends StatelessWidget {
   final String imageUrl;
   final double rating;
   final String whyYoullLoveIt;
+  final String? mealType;
   final VoidCallback? onTap;
 
   @override
@@ -93,6 +95,24 @@ class MealCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // MealType pill (Sarapan / Makan Siang / Makan Malam)
+                  if (mealType != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary100,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Text(
+                        mealType!,
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: AppColors.primary700,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   // Category label
                   Text(
                     category.toUpperCase(),

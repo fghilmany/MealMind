@@ -42,52 +42,38 @@ class _StepItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 28),
-      child: Column(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Step number + title
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                '${step.stepNumber}',
-                style: AppTextStyles.displaySmall.copyWith(
-                  color: AppColors.secondary,
-                  fontWeight: FontWeight.w800,
-                  height: 1,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(step.title, style: AppTextStyles.titleMedium),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Description
-          Text(
-            step.description,
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-          ),
-          // Optional image
-          if (step.imageUrl != null) ...[
-            const SizedBox(height: 14),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Image.network(
-                step.imageUrl!,
-                width: double.infinity,
-                height: 180,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 180,
-                  color: AppColors.neutral200,
-                  child: const Icon(Icons.restaurant, size: 48, color: AppColors.neutral400),
-                ),
+          // Step number circle
+          Container(
+            width: 28,
+            height: 28,
+            decoration: const BoxDecoration(
+              color: AppColors.secondary,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '${step.stepNumber}',
+              style: AppTextStyles.labelMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
               ),
             ),
-          ],
+          ),
+          const SizedBox(width: 12),
+          // Instruction text
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                step.description,
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              ),
+            ),
+          ),
         ],
       ),
     );
