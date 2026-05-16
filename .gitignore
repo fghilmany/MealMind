@@ -46,3 +46,26 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
+
+# Firebase config
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# Android signing
+android/key.properties
+android/app/*.jks
+android/app/*.keystore
+android/*.jks
+android/*.keystore
+
+# iOS signing / export artifacts
+ios/*.p12
+ios/*.mobileprovision
+ios/*.cer
+ios/Runner/*.mobileprovision
+
+# Env / secret files
+.env
+.env.*
+*.secret
+*.secrets
