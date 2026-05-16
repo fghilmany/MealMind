@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_text_styles.dart';
 import '../../../../../core/database/favorites_local_datasource.dart';
-import '../../../recipe_detail/presentation/pages/recipe_detail_page.dart';
 
 class FavoriteRecipeCard extends StatelessWidget {
   const FavoriteRecipeCard({
