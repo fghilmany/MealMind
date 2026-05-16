@@ -1,5 +1,7 @@
 import 'package:hive_flutter/hive_flutter.dart';
 
+import 'package:hive_flutter/hive_flutter.dart';
+
 class AppDatabase {
   AppDatabase._();
 
@@ -9,6 +11,7 @@ class AppDatabase {
   static const _boxName = 'recommendation_cache';
   static const _keyJson = 'json';
   static const _keyDate = 'date';
+  static const _keyPrefKey = 'pref_key';
 
   Future<Box> _box() async {
     if (Hive.isBoxOpen(_boxName)) return Hive.box(_boxName);
@@ -28,9 +31,20 @@ class AppDatabase {
     await box.put(_keyDate, dateKey);
   }
 
+  Future<String?> getCachedPreferenceKey() async {
+    final box = await _box();
+    return box.get(_keyPrefKey) as String?;
+  }
+
+  Future<void> cachePreferenceKey(String prefKey) async {
+    final box = await _box();
+    await box.put(_keyPrefKey, prefKey);
+  }
+
   Future<void> clearRecommendationCache() async {
     final box = await _box();
     await box.delete(_keyJson);
     await box.delete(_keyDate);
+    await box.delete(_keyPrefKey);
   }
 }

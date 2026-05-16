@@ -16,7 +16,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   ) async {
     emit(const HomeLoading());
     try {
-      final result = await _getRecommendations(forceRefresh: event.forceRefresh);
+      final result = await _getRecommendations(
+        forceRefresh: event.forceRefresh,
+        preference: event.preference,
+      );
       emit(HomeLoaded(result));
     } catch (e, st) {
       // ignore: avoid_print

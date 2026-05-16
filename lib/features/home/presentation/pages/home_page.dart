@@ -8,7 +8,9 @@ import '../../../../core/database/app_database.dart';
 import '../../../recipe_detail/presentation/pages/recipe_detail_page.dart';
 import '../../data/datasources/home_remote_datasource.dart';
 import '../../data/datasources/home_local_datasource.dart';
+import '../../data/datasources/preference_local_datasource.dart';
 import '../../data/repositories/home_repository_impl.dart';
+import '../widgets/refine_preferences_sheet.dart';
 import '../../domain/entities/recommendation_entity.dart';
 import '../../domain/usecases/get_recommendations_usecase.dart';
 import '../bloc/home_bloc.dart';
@@ -63,16 +65,18 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final preferenceDataSource = PreferenceLocalDataSource();
     return BlocProvider(
       create: (_) => HomeBloc(
         GetRecommendationsUseCase(
           HomeRepositoryImpl(
             HomeRemoteDataSourceImpl(),
             HomeLocalDataSource(AppDatabase.instance),
+            preferenceDataSource,
           ),
         ),
       )..add(const FetchRecommendationsEvent()),
-      child: const _HomeView(),
+      child: _HomeView(preferenceDataSource: preferenceDataSource),
     );
   }
 }
@@ -80,7 +84,9 @@ class HomePage extends StatelessWidget {
 // ─── View ─────────────────────────────────────────────────────────────────────
 
 class _HomeView extends StatefulWidget {
-  const _HomeView();
+  const _HomeView({required this.preferenceDataSource});
+
+  final PreferenceLocalDataSource preferenceDataSource;
 
   @override
   State<_HomeView> createState() => _HomeViewState();
@@ -88,6 +94,32 @@ class _HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<_HomeView> {
   int _selectedCraving = 0;
+
+  Future<void> _openPreferences(BuildContext context) async {
+    final pref = await widget.preferenceDataSource.getPreference();
+    if (!context.mounted) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => BlocProvider.value(
+        value: context.read<HomeBloc>(),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.92,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (ctx, scrollController) => RefinePreferencesSheet(
+            initial: pref,
+            preferenceDataSource: widget.preferenceDataSource,
+          ),
+        ),
+      ),
+    );
+  }
 
   final List<_CravingFilter> _cravingFilters = const [
     _CravingFilter('Semua', AppColors.primary),
@@ -350,7 +382,7 @@ class _HomeViewState extends State<_HomeView> {
             variant: AppButtonVariant.inverted,
             icon: Icons.tune_rounded,
             isFullWidth: true,
-            onPressed: () {},
+            onPressed: () => _openPreferences(context),
           ),
           const SizedBox(height: 28),
         ],

@@ -2,19 +2,22 @@ import 'dart:convert';
 import 'package:firebase_ai/firebase_ai.dart';
 import '../models/recommendation_model.dart';
 import '../home_prompts.dart';
+import '../../domain/entities/user_preference_entity.dart';
 
 abstract class HomeRemoteDataSource {
-  Future<String> fetchRecommendationsJson();
+  Future<String> fetchRecommendationsJson(UserPreferenceEntity preference);
 }
 
 class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
   HomeRemoteDataSourceImpl();
 
   @override
-  Future<String> fetchRecommendationsJson() async {
+  Future<String> fetchRecommendationsJson(UserPreferenceEntity preference) async {
     try {
       final model = FirebaseAI.googleAI().generativeModel(model: 'gemini-2.5-flash');
-      final response = await model.generateContent([Content.text(HomePrompts.recommendation)]);
+      final response = await model.generateContent([
+        Content.text(HomePrompts.recommendation(preference)),
+      ]);
       final raw = response.text ?? '';
 
       // ignore: avoid_print

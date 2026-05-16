@@ -1,9 +1,36 @@
+import '../domain/entities/user_preference_entity.dart';
+
 class HomePrompts {
   HomePrompts._();
 
-  static const String recommendation = '''
+  static String recommendation(UserPreferenceEntity preference) {
+    final themeClause = preference.foodThemes.isEmpty
+        ? ''
+        : 'Preferensi tema makanan saya: ${preference.foodThemes.join(', ')}.';
+
+    final mealTimeClause = preference.mealTime != null
+        ? 'Waktu makan yang diinginkan: ${preference.mealTime}.'
+        : '';
+
+    final courseClause = preference.course != null
+        ? 'Jenis hidangan: ${preference.course}.'
+        : '';
+
+    final halalClause = preference.halalOnly
+        ? 'Semua rekomendasi harus halal.'
+        : '';
+
+    final notesClause = preference.additionalNotes.trim().isNotEmpty
+        ? 'Catatan tambahan: ${preference.additionalNotes.trim()}.'
+        : '';
+
+    return '''
 Berikan saya rekomendasi makanan yang cocok untuk saya.
-Preferensi makanan saya ialah makanan Nusantara, Chineese atau Eropa.
+$themeClause
+$mealTimeClause
+$courseClause
+$halalClause
+$notesClause
 
 Balas HANYA dengan JSON valid tanpa markdown, tanpa penjelasan, dengan format berikut:
 {
@@ -35,7 +62,7 @@ Balas HANYA dengan JSON valid tanpa markdown, tanpa penjelasan, dengan format be
     {
       "mealType": "Sarapan",
       "title": "string",
-      "category": "Nusantara",
+      "category": "string",
       "rating": number antara 4.5 dan 5.0,
       "whyYoullLoveIt": "string",
       "prepTime": "string",
@@ -56,7 +83,7 @@ Balas HANYA dengan JSON valid tanpa markdown, tanpa penjelasan, dengan format be
     {
       "mealType": "Makan Siang",
       "title": "string",
-      "category": "Nusantara",
+      "category": "string",
       "rating": number antara 4.5 dan 5.0,
       "whyYoullLoveIt": "string",
       "prepTime": "string",
@@ -77,7 +104,7 @@ Balas HANYA dengan JSON valid tanpa markdown, tanpa penjelasan, dengan format be
     {
       "mealType": "Makan Malam",
       "title": "string",
-      "category": "Nusantara",
+      "category": "string",
       "rating": number antara 4.5 dan 5.0,
       "whyYoullLoveIt": "string",
       "prepTime": "string",
@@ -100,4 +127,5 @@ Balas HANYA dengan JSON valid tanpa markdown, tanpa penjelasan, dengan format be
 
 Semua teks dalam Bahasa Indonesia.
 ''';
+  }
 }
