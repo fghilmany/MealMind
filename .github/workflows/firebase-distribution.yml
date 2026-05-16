@@ -2,7 +2,8 @@ name: Build and Deploy to Firebase App Distribution
 
 on:
   push:
-    branches: [ main ]
+    tags:
+      - 'v*'  # Triggers only on version tags like v1.0.0, v1.2.3, etc.
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -24,7 +25,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.5' # Adjust to your Flutter version
+          flutter-version: '3.41.9' # Adjust to your Flutter version
           channel: 'stable'
 
       - name: Install dependencies
