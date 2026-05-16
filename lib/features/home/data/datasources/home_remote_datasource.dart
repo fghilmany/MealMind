@@ -4,24 +4,39 @@ import '../models/recommendation_model.dart';
 import '../home_prompts.dart';
 
 abstract class HomeRemoteDataSource {
-  Future<RecommendationModel> getRecommendations();
+  Future<String> fetchRecommendationsJson();
 }
 
 class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
   HomeRemoteDataSourceImpl();
 
   @override
-  Future<RecommendationModel> getRecommendations() async {
-    final model = FirebaseAI.googleAI().generativeModel(model: 'gemini-2.5-flash');
-    final response = await model.generateContent([Content.text(HomePrompts.recommendation)]);
-    final raw = response.text ?? '';
+  Future<String> fetchRecommendationsJson() async {
+    try {
+      final model = FirebaseAI.googleAI().generativeModel(model: 'gemini-2.5-flash');
+      final response = await model.generateContent([Content.text(HomePrompts.recommendation)]);
+      final raw = response.text ?? '';
 
-    final cleaned = raw
-        .replaceAll(RegExp(r'```json\s*'), '')
-        .replaceAll(RegExp(r'```\s*'), '')
-        .trim();
+      // ignore: avoid_print
+      print('=== AI RAW RESPONSE ===\n$raw\n=======================');
 
-    final json = jsonDecode(cleaned) as Map<String, dynamic>;
-    return RecommendationModel.fromJson(json);
+      final cleaned = raw
+          .replaceAll(RegExp(r'```json\s*'), '')
+          .replaceAll(RegExp(r'```\s*'), '')
+          .trim();
+
+      // Validate JSON before returning
+      jsonDecode(cleaned);
+      return cleaned;
+    } catch (e, st) {
+      // ignore: avoid_print
+      print('fetchRecommendationsJson error: $e\n$st');
+      rethrow;
+    }
   }
+}
+
+RecommendationModel parseRecommendationJson(String json) {
+  final decoded = jsonDecode(json) as Map<String, dynamic>;
+  return RecommendationModel.fromJson(decoded);
 }

@@ -8,5 +8,10 @@ abstract class HomeEvent extends Equatable {
 }
 
 class FetchRecommendationsEvent extends HomeEvent {
-  const FetchRecommendationsEvent();
+  const FetchRecommendationsEvent({this.forceRefresh = false});
+
+  final bool forceRefresh;
+
+  @override
+  List<Object?> get props => [forceRefresh];
 }

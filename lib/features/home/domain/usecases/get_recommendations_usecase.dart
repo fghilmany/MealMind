@@ -6,5 +6,6 @@ class GetRecommendationsUseCase {
 
   final HomeRepository _repository;
 
-  Future<RecommendationEntity> call() => _repository.getRecommendations();
+  Future<RecommendationEntity> call({bool forceRefresh = false}) =>
+      _repository.getRecommendations(forceRefresh: forceRefresh);
 }

@@ -4,8 +4,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/mappers/entity_mappers.dart';
+import '../../../../core/database/app_database.dart';
 import '../../../recipe_detail/presentation/pages/recipe_detail_page.dart';
 import '../../data/datasources/home_remote_datasource.dart';
+import '../../data/datasources/home_local_datasource.dart';
 import '../../data/repositories/home_repository_impl.dart';
 import '../../domain/entities/recommendation_entity.dart';
 import '../../domain/usecases/get_recommendations_usecase.dart';
@@ -64,7 +66,10 @@ class HomePage extends StatelessWidget {
     return BlocProvider(
       create: (_) => HomeBloc(
         GetRecommendationsUseCase(
-          HomeRepositoryImpl(HomeRemoteDataSourceImpl()),
+          HomeRepositoryImpl(
+            HomeRemoteDataSourceImpl(),
+            HomeLocalDataSource(AppDatabase.instance),
+          ),
         ),
       )..add(const FetchRecommendationsEvent()),
       child: const _HomeView(),
@@ -249,8 +254,9 @@ class _HomeViewState extends State<_HomeView> {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () =>
-                      context.read<HomeBloc>().add(const FetchRecommendationsEvent()),
+                  onTap: () => context
+                      .read<HomeBloc>()
+                      .add(const FetchRecommendationsEvent(forceRefresh: true)),
                   child: const Icon(Icons.refresh_rounded, size: 16, color: AppColors.primary),
                 ),
               ],
