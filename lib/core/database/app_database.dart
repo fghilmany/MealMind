@@ -1,7 +1,5 @@
 import 'package:hive_flutter/hive_flutter.dart';
 
-import 'package:hive_flutter/hive_flutter.dart';
-
 class AppDatabase {
   AppDatabase._();
 
