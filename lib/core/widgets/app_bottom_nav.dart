@@ -16,7 +16,7 @@ class AppBottomNav extends StatelessWidget {
     _NavItemData(icon: Icons.home_rounded, label: 'Home'),
     _NavItemData(icon: Icons.calendar_today_outlined, label: 'Planner'),
     _NavItemData(icon: Icons.auto_awesome_outlined, label: 'AI Assistant'),
-    _NavItemData(icon: Icons.menu_book_outlined, label: 'Recipes'),
+    _NavItemData(icon: Icons.favorite_border_rounded, label: 'Favorites'),
   ];
 
   @override

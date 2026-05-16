@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/database/favorites_local_datasource.dart';
 import '../widgets/recipe_hero_section.dart';
 import '../widgets/ingredients_section.dart';
 import '../widgets/nutrition_facts_section.dart';
@@ -90,14 +91,69 @@ class RecipeData {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-class RecipeDetailPage extends StatelessWidget {
-  const RecipeDetailPage({super.key, this.recipe});
+class RecipeDetailPage extends StatefulWidget {
+  const RecipeDetailPage({
+    super.key,
+    this.recipe,
+    this.category = 'General',
+    this.rating = 4.8,
+  });
 
   final RecipeData? recipe;
+  final String category;
+  final double rating;
+
+  @override
+  State<RecipeDetailPage> createState() => _RecipeDetailPageState();
+}
+
+class _RecipeDetailPageState extends State<RecipeDetailPage> {
+  final FavoritesLocalDataSource _favDataSource = FavoritesLocalDataSource();
+  bool _isFavorite = false;
+
+  late final RecipeData _data;
+
+  @override
+  void initState() {
+    super.initState();
+    _data = widget.recipe ?? RecipeData.dummy;
+    _checkFavorite();
+  }
+
+  Future<void> _checkFavorite() async {
+    final result = await _favDataSource.isFavorite(_data.title);
+    if (mounted) setState(() => _isFavorite = result);
+  }
+
+  Future<void> _toggleFavorite() async {
+    final item = FavoriteItem(
+      id: _data.title,
+      title: _data.title,
+      imageUrl: _data.imageUrl,
+      category: widget.category,
+      prepTime: _data.prepTime,
+      calories: _data.nutrition.calories,
+      rating: widget.rating,
+      recipeData: _data,
+    );
+    await _favDataSource.toggle(item);
+    if (mounted) setState(() => _isFavorite = !_isFavorite);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isFavorite ? 'Added to favorites!' : 'Removed from favorites',
+          ),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final data = recipe ?? RecipeData.dummy;
     final badgeColors = [AppColors.primary, AppColors.secondary, AppColors.info];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -110,12 +166,12 @@ class RecipeDetailPage extends StatelessWidget {
               slivers: [
                 SliverToBoxAdapter(
                   child: RecipeHeroSection(
-                    title: data.title,
-                    imageUrl: data.imageUrl,
-                    prepTime: data.prepTime,
-                    servings: data.servings,
-                    calories: data.nutrition.calories,
-                    badges: data.badges
+                    title: _data.title,
+                    imageUrl: _data.imageUrl,
+                    prepTime: _data.prepTime,
+                    servings: _data.servings,
+                    calories: _data.nutrition.calories,
+                    badges: _data.badges
                         .asMap()
                         .entries
                         .map((e) => RecipeBadge(
@@ -132,22 +188,22 @@ class RecipeDetailPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         IngredientsSection(
-                          ingredients: data.ingredients,
+                          ingredients: _data.ingredients,
                           onAdjustServings: () {},
                         ),
                         const SizedBox(height: 32),
                         const Divider(),
                         const SizedBox(height: 32),
                         NutritionFactsSection(
-                          calories: data.nutrition.calories,
-                          protein: data.nutrition.protein,
-                          carbs: data.nutrition.carbs,
-                          fat: data.nutrition.fat,
+                          calories: _data.nutrition.calories,
+                          protein: _data.nutrition.protein,
+                          carbs: _data.nutrition.carbs,
+                          fat: _data.nutrition.fat,
                         ),
                         const SizedBox(height: 32),
                         const Divider(),
                         const SizedBox(height: 32),
-                        InstructionsSection(steps: data.steps),
+                        InstructionsSection(steps: _data.steps),
                         const SizedBox(height: 100),
                       ],
                     ),
@@ -169,6 +225,28 @@ class RecipeDetailPage extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                ),
+              ),
+            ),
+            // Favorite button
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              right: 16,
+              child: GestureDetector(
+                onTap: _toggleFavorite,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: _isFavorite ? AppColors.error : Colors.black45,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
             ),
