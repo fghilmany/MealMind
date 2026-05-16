@@ -11,7 +11,7 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,7 +25,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.9' # Adjust to your Flutter version
+          flutter-version: '3.41.9'
           channel: 'stable'
 
       - name: Install dependencies
@@ -36,6 +36,12 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore.jks
+
+      - name: Decode and save google-services.json
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > android/app/google-services.json
 
       - name: Create key.properties
         run: |
@@ -56,4 +62,4 @@ jobs:
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           groups: testers
           file: build/app/outputs/flutter-apk/app-release.apk
-          releaseNotes: "Build from GitHub Actions - ${{ github.sha }}"
+          releaseNotes: "Version ${{ github.ref_name }} - Build from GitHub Actions"
