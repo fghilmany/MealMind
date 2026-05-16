@@ -9,12 +9,14 @@ class ChatInputBar extends StatelessWidget {
     required this.onSend,
     this.focusNode,
     this.isLoading = false,
+    this.hintText = 'Type your request here...',
   });
 
   final TextEditingController controller;
   final VoidCallback onSend;
   final FocusNode? focusNode;
   final bool isLoading;
+  final String hintText;
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +45,7 @@ class ChatInputBar extends StatelessWidget {
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => onSend(),
                   decoration: InputDecoration(
-                    hintText: 'Type your request here...',
+                    hintText: hintText,
                     hintStyle: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.textDisabled,
                     ),

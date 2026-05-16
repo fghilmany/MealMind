@@ -11,6 +11,7 @@ class AiMealResultCard extends StatelessWidget {
     this.onApply,
     this.onRevise,
     this.onFavorite,
+    this.onViewDetail,
   });
 
   final String title;
@@ -19,6 +20,7 @@ class AiMealResultCard extends StatelessWidget {
   final VoidCallback? onApply;
   final VoidCallback? onRevise;
   final VoidCallback? onFavorite;
+  final VoidCallback? onViewDetail;
 
   @override
   Widget build(BuildContext context) {
@@ -85,6 +87,24 @@ class AiMealResultCard extends StatelessWidget {
                 const SizedBox(height: 16),
                 const Divider(height: 1),
                 const SizedBox(height: 16),
+                // View detail button
+                if (onViewDetail != null) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: onViewDetail,
+                      icon: const Icon(Icons.menu_book_rounded, size: 16),
+                      label: const Text('Lihat Detail Resep'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 // Action buttons
                 Row(
                   children: [
