@@ -16,6 +16,7 @@ class AiDishResult {
     required this.title,
     required this.imageQuery,
     required this.prepTime,
+    required this.servings,
     required this.tags,
     required this.ingredients,
     required this.steps,
@@ -25,6 +26,7 @@ class AiDishResult {
   final String title;
   final String imageQuery;
   final String prepTime;
+  final String servings;
   final List<AiDishTag> tags;
   final List<String> ingredients;
   final List<String> steps;
@@ -34,6 +36,7 @@ class AiDishResult {
         title: json['title'] as String,
         imageQuery: json['imageQuery'] as String? ?? json['title'] as String,
         prepTime: json['prepTime'] as String,
+        servings: json['servings'] as String? ?? '2 Porsi',
         tags: (json['tags'] as List? ?? [])
             .map((t) => AiDishTag.fromJson(t as Map<String, dynamic>))
             .toList(),

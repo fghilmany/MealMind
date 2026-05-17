@@ -59,7 +59,10 @@ class _PlannerPreferenceSheetState extends State<PlannerPreferenceSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         // Drag handle
@@ -90,7 +93,12 @@ class _PlannerPreferenceSheetState extends State<PlannerPreferenceSheet> {
         // Scrollable body
         Flexible(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              20,
+              20,
+              20 + MediaQuery.of(context).viewInsets.bottom,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -215,12 +223,7 @@ class _PlannerPreferenceSheetState extends State<PlannerPreferenceSheet> {
         ),
         // Fixed bottom button
         Container(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            12,
-            20,
-            12 + MediaQuery.of(context).padding.bottom,
-          ),
+          padding: EdgeInsets.fromLTRB(20, 12, 20, 12),
           decoration: BoxDecoration(
             color: AppColors.surface,
             border: Border(top: BorderSide(color: AppColors.neutral200)),
@@ -233,7 +236,8 @@ class _PlannerPreferenceSheetState extends State<PlannerPreferenceSheet> {
           ),
         ),
       ],
-    );
+    ),
+  );
   }
 
   Widget _sectionHeader(IconData icon, String title, String? badge) {

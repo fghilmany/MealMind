@@ -1,4 +1,4 @@
-import 'package:app/features/planner/domain/planner_preference_entity.dart';
+import '../domain/planner_preference_entity.dart';
 
 class PlannerPrompts {
   PlannerPrompts._();

@@ -18,6 +18,7 @@ Aturan yang WAJIB kamu ikuti:
     "title": "string — nama hidangan",
     "imageQuery": "string — kata kunci bahasa Inggris untuk foto hidangan ini (contoh: rendang chicken rice)",
     "prepTime": "string — contoh: 30 Menit",
+    "servings": "string — contoh: 2 Porsi",
     "tags": [
       { "label": "string", "color": "spicy|time|category|healthy", "icon": "fire|clock|category|leaf" }
     ],

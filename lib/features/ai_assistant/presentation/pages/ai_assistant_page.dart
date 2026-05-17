@@ -363,7 +363,7 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
       title: dish.title,
       imageUrl: imageUrl,
       prepTime: dish.prepTime,
-      servings: '2 Porsi',
+      servings: dish.servings,
       badges: dish.tags.map((t) => t.label).toList(),
       ingredients: dish.ingredients,
       steps: dish.steps
